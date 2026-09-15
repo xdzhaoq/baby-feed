@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcSleepMapper">
+
+    <resultMap id="NcSleepResult" type="com.youyou.nursing.domain.NcSleep">
+        <id     property="sleepId"      column="sleep_id"/>
+        <result property="babyId"       column="baby_id"/>
+        <result property="startTime"    column="start_time"/>
+        <result property="endTime"      column="end_time"/>
+        <result property="sleepType"    column="sleep_type"/>
+        <result property="durationMin"  column="duration_min"/>
+        <result property="notes"        column="notes"/>
+        <result property="operatorId"   column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="rev"          column="rev"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateByName" column="update_by_name"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select sleep_id, baby_id, start_time, end_time, sleep_type, duration_min, notes,
+               operator_id, operator_name, rev, del_flag, create_by, create_time,
+               update_by, update_by_name, update_time, remark
+          from nc_sleep
+    </sql>
+
+    <select id="selectById" resultMap="NcSleepResult">
+        <include refid="selectVo"/>
+        where sleep_id = #{sleepId} and del_flag = '0'
+    </select>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcSleep" resultMap="NcSleepResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            and baby_id = #{babyId}
+            <if test="sleepType != null and sleepType != ''">and sleep_type = #{sleepType}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and start_time::date &gt;= to_date(#{params.beginTime},'yyyy-MM-dd')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and start_time::date &lt;= to_date(#{params.endTime},'yyyy-MM-dd')
+            </if>
+        </where>
+        order by start_time desc, sleep_id desc
+    </select>
+
+    <select id="selectDailyChart" resultType="com.youyou.nursing.domain.NcChartPoint">
+        select to_char(start_time, 'YYYY-MM-DD') as label,
+               count(*)::int as count,
+               round(coalesce(sum(duration_min), 0)::numeric / 60, 1) as amount
+          from nc_sleep
+         where baby_id = #{babyId}
+           and del_flag = '0'
+           and end_time is not null
+           and start_time::date &gt;= current_date - (#{days}::int - 1)
+         group by to_char(start_time, 'YYYY-MM-DD')
+         order by label
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcSleep" useGeneratedKeys="true" keyProperty="sleepId">
+        insert into nc_sleep (
+            baby_id, start_time, end_time, sleep_type, duration_min, notes,
+            operator_id, operator_name, rev, del_flag, create_by, create_time, remark
+        ) values (
+            #{babyId}, #{startTime}, #{endTime}, #{sleepType}, #{durationMin}, #{notes},
+            #{operatorId}, #{operatorName}, #{rev}, #{delFlag}, #{createBy}, current_timestamp, #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.youyou.nursing.domain.NcSleep">
+        update nc_sleep
+           set start_time = #{startTime},
+               end_time = #{endTime},
+               sleep_type = #{sleepType},
+               duration_min = #{durationMin},
+               notes = #{notes},
+               update_by = #{updateBy},
+               update_by_name = #{updateByName},
+               rev = rev + 1,
+               update_time = current_timestamp
+         where sleep_id = #{sleepId} and del_flag = '0' and rev = #{rev}
+    </update>
+
+    <update id="deleteByIds">
+        update nc_sleep set del_flag = '2', update_time = current_timestamp
+         where sleep_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+</mapper>

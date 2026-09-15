@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcVaccineMapper">
+
+    <resultMap id="VaccineResult" type="com.youyou.nursing.domain.NcVaccineItem">
+        <id     property="scheduleId"    column="schedule_id"/>
+        <result property="vaccineCode"   column="vaccine_code"/>
+        <result property="vaccineName"   column="vaccine_name"/>
+        <result property="doseNo"        column="dose_no"/>
+        <result property="totalDoses"    column="total_doses"/>
+        <result property="dueAgeDays"    column="due_age_days"/>
+        <result property="remindBefore"  column="remind_before"/>
+        <result property="remark"        column="remark"/>
+        <result property="recordId"      column="record_id"/>
+        <result property="inoculated"    column="inoculated"/>
+        <result property="inoculateDate" column="inoculate_date"/>
+        <result property="operatorName"  column="operator_name"/>
+        <result property="dueDate"       column="due_date"/>
+    </resultMap>
+
+    <select id="selectBoard" resultMap="VaccineResult">
+        select s.schedule_id, s.vaccine_code, s.vaccine_name, s.dose_no, s.total_doses,
+               s.due_age_days, s.remind_before, s.remark,
+               r.record_id, coalesce(r.inoculated, '0') as inoculated, r.inoculate_date, r.operator_name,
+               (b.birth_date + (s.due_age_days || ' day')::interval)::date as due_date
+          from nc_vaccine_schedule s
+          inner join nc_baby b on b.baby_id = #{babyId} and b.del_flag = '0'
+          left join nc_vaccine_record r on r.schedule_id = s.schedule_id and r.baby_id = b.baby_id
+         order by s.sort_num, s.schedule_id
+    </select>
+
+    <select id="selectScheduleById" resultMap="VaccineResult">
+        select schedule_id, vaccine_code, vaccine_name, dose_no, total_doses,
+               due_age_days, remind_before, remark
+          from nc_vaccine_schedule
+         where schedule_id = #{scheduleId}
+    </select>
+
+    <insert id="insertSchedule" parameterType="com.youyou.nursing.domain.NcVaccineItem" useGeneratedKeys="true" keyProperty="scheduleId">
+        insert into nc_vaccine_schedule (vaccine_code, vaccine_name, dose_no, total_doses, due_age_days, remind_before, sort_num, remark)
+        values (#{vaccineCode}, #{vaccineName}, #{doseNo}, #{totalDoses}, #{dueAgeDays}, #{remindBefore}, #{sortNum}, #{remark})
+    </insert>
+
+    <delete id="deleteRecordsBySchedule">
+        delete from nc_vaccine_record where schedule_id = #{scheduleId}
+    </delete>
+
+    <delete id="deleteSchedule">
+        delete from nc_vaccine_schedule where schedule_id = #{scheduleId}
+    </delete>
+
+    <insert id="upsertRecord" parameterType="com.youyou.nursing.domain.NcVaccineMark">
+        insert into nc_vaccine_record (baby_id, schedule_id, inoculated, inoculate_date, operator_id, operator_name, create_time, update_time)
+        values (#{babyId}, #{scheduleId}, #{inoculated}, #{inoculateDate}, #{operatorId}, #{operatorName}, current_timestamp, current_timestamp)
+        on conflict (baby_id, schedule_id) do update
+           set inoculated = excluded.inoculated,
+               inoculate_date = excluded.inoculate_date,
+               operator_id = excluded.operator_id,
+               operator_name = excluded.operator_name,
+               update_time = current_timestamp
+    </insert>
+</mapper>

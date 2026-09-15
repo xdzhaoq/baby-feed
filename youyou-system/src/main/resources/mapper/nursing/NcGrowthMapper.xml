@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcGrowthMapper">
+
+    <resultMap id="GrowthResult" type="com.youyou.nursing.domain.NcGrowth">
+        <id     property="growthId"     column="growth_id"/>
+        <result property="babyId"       column="baby_id"/>
+        <result property="measureDate"  column="measure_date"/>
+        <result property="weightKg"     column="weight_kg"/>
+        <result property="heightCm"     column="height_cm"/>
+        <result property="headCm"       column="head_cm"/>
+        <result property="notes"        column="notes"/>
+        <result property="operatorId"   column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="rev"          column="rev"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateByName" column="update_by_name"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select growth_id, baby_id, measure_date, weight_kg, height_cm, head_cm, notes,
+               operator_id, operator_name, rev, del_flag, create_by, create_time,
+               update_by, update_by_name, update_time, remark
+          from nc_growth
+    </sql>
+
+    <select id="selectById" resultMap="GrowthResult">
+        <include refid="selectVo"/>
+        where growth_id = #{growthId} and del_flag = '0'
+    </select>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcGrowth" resultMap="GrowthResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            and baby_id = #{babyId}
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and measure_date &gt;= to_date(#{params.beginTime},'yyyy-MM-dd')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and measure_date &lt;= to_date(#{params.endTime},'yyyy-MM-dd')
+            </if>
+        </where>
+        order by measure_date desc, growth_id desc
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcGrowth" useGeneratedKeys="true" keyProperty="growthId">
+        insert into nc_growth (
+            baby_id, measure_date, weight_kg, height_cm, head_cm, notes,
+            operator_id, operator_name, rev, del_flag, create_by, create_time, remark
+        ) values (
+            #{babyId}, #{measureDate}, #{weightKg}, #{heightCm}, #{headCm}, #{notes},
+            #{operatorId}, #{operatorName}, #{rev}, #{delFlag}, #{createBy}, current_timestamp, #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.youyou.nursing.domain.NcGrowth">
+        update nc_growth
+           set measure_date = #{measureDate},
+               weight_kg = #{weightKg},
+               height_cm = #{heightCm},
+               head_cm = #{headCm},
+               notes = #{notes},
+               update_by = #{updateBy},
+               update_by_name = #{updateByName},
+               rev = rev + 1,
+               update_time = current_timestamp
+         where growth_id = #{growthId} and del_flag = '0' and rev = #{rev}
+    </update>
+
+    <update id="deleteByIds">
+        update nc_growth set del_flag = '2', update_time = current_timestamp
+         where growth_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+</mapper>

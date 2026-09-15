@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcDashboardMapper">
+
+    <resultMap id="TodayResult" type="com.youyou.nursing.domain.NcTodayOverview">
+        <result property="babyId"               column="baby_id"/>
+        <result property="babyName"             column="baby_name"/>
+        <result property="feedCount"            column="feed_count"/>
+        <result property="feedAmountMl"         column="feed_amount_ml"/>
+        <result property="sleepMinutes"         column="sleep_minutes"/>
+        <result property="diaperCount"          column="diaper_count"/>
+        <result property="diaperAbnormalCount"  column="diaper_abnormal_count"/>
+        <result property="cryMinutes"           column="cry_minutes"/>
+        <result property="lastFeedTime"         column="last_feed_time"/>
+        <result property="lastFeedOperator"     column="last_feed_operator"/>
+        <result property="unfinishedCare"       column="unfinished_care"/>
+        <result property="peeCount"             column="pee_count"/>
+    </resultMap>
+
+    <select id="selectTodayOverview" resultMap="TodayResult">
+        select b.baby_id,
+               b.baby_name,
+               (select count(*)::int from nc_feeding f
+                 where f.baby_id = b.baby_id and f.del_flag = '0' and f.feed_time::date = current_date) as feed_count,
+               (select coalesce(sum(f.amount_ml), 0) from nc_feeding f
+                 where f.baby_id = b.baby_id and f.del_flag = '0' and f.feed_time::date = current_date) as feed_amount_ml,
+               (select coalesce(sum(s.duration_min), 0)::int from nc_sleep s
+                 where s.baby_id = b.baby_id and s.del_flag = '0' and s.start_time::date = current_date) as sleep_minutes,
+               (select count(*)::int from nc_diaper d
+                 where d.baby_id = b.baby_id and d.del_flag = '0' and d.record_time::date = current_date) as diaper_count,
+               (select count(*)::int from nc_diaper d
+                 where d.baby_id = b.baby_id and d.del_flag = '0' and d.record_time::date = current_date
+                   and d.stool_texture in ('watery', 'bloody', 'mucus', 'other')) as diaper_abnormal_count,
+               (select coalesce(sum(
+                        case
+                          when c.end_time is not null then (extract(epoch from (c.end_time - c.start_time)) / 60)::int
+                          else 0
+                        end), 0)::int
+                  from nc_cry c
+                 where c.baby_id = b.baby_id and c.del_flag = '0' and c.start_time::date = current_date) as cry_minutes,
+               (select count(*)::int from nc_diaper d
+                 where d.baby_id = b.baby_id and d.del_flag = '0' and d.record_time::date = current_date
+                   and d.diaper_type in ('pee', 'both')) as pee_count,
+               lf.feed_time as last_feed_time,
+               lf.operator_name as last_feed_operator,
+               (select count(*)::int
+                  from nc_care_item i
+                  left join nc_care_log l
+                    on l.item_id = i.item_id and l.baby_id = b.baby_id and l.care_date = current_date
+                 where i.del_flag = '0' and i.status = '0'
+                   and (i.baby_id is null or i.baby_id = b.baby_id)
+                   and not exists (
+                         select 1 from nc_care_hidden h
+                          where h.baby_id = b.baby_id and h.item_id = i.item_id
+                       )
+                   and coalesce(l.completed, '0') = '0') as unfinished_care
+          from nc_baby b
+          left join lateral (
+                select feed_time, operator_name
+                  from nc_feeding
+                 where baby_id = b.baby_id and del_flag = '0'
+                 order by feed_time desc
+                 limit 1
+          ) lf on true
+         where b.baby_id = #{babyId} and b.del_flag = '0'
+    </select>
+
+    <resultMap id="AdminCardResult" type="com.youyou.nursing.domain.NcAdminBabyCard">
+        <id     property="babyId"           column="baby_id"/>
+        <result property="babyName"         column="baby_name"/>
+        <result property="momUserName"      column="mom_user_name"/>
+        <result property="birthDate"        column="birth_date"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="memberCount"      column="member_count"/>
+        <result property="onlineCount"      column="online_count"/>
+        <result property="unfinishedCare"   column="unfinished_care"/>
+        <result property="feedCount"        column="feed_count"/>
+        <result property="peeCount"         column="pee_count"/>
+        <result property="lastFeedTime"     column="last_feed_time"/>
+        <result property="lastFeedOperator" column="last_feed_operator"/>
+        <result property="familyMemberCount" column="family_member_count"/>
+        <result property="memberNames"      column="member_names"/>
+    </resultMap>
+
+    <select id="selectAdminBabyCards" resultMap="AdminCardResult">
+        <![CDATA[
+        select b.baby_id, b.baby_name, b.mom_user_name, b.birth_date, b.create_time,
+               (select count(*)::int from nc_baby_member m
+                 where m.baby_id = b.baby_id and m.status = '0') as member_count,
+               (select count(*)::int from nc_baby_member m
+                 where m.baby_id = b.baby_id and m.status = '0' and m.role_tag not in ('mom')) as family_member_count,
+               (select string_agg(m.display_name, '、' order by case m.role_tag when 'mom' then 0 else 1 end)
+                  from nc_baby_member m
+                 where m.baby_id = b.baby_id and m.status = '0') as member_names,
+               (select count(*)::int from v_nc_online_member o
+                 where o.baby_id = b.baby_id and o.online_flag = '1') as online_count,
+               (select count(*)::int from nc_feeding f
+                 where f.baby_id = b.baby_id and f.del_flag = '0' and f.feed_time::date = current_date) as feed_count,
+               (select count(*)::int from nc_diaper d
+                 where d.baby_id = b.baby_id and d.del_flag = '0' and d.record_time::date = current_date
+                   and d.diaper_type in ('pee', 'both')) as pee_count,
+               lf.feed_time as last_feed_time,
+               lf.operator_name as last_feed_operator,
+               (select count(*)::int
+                  from nc_care_item i
+                  left join nc_care_log l
+                    on l.item_id = i.item_id and l.baby_id = b.baby_id and l.care_date = current_date
+                 where i.del_flag = '0' and i.status = '0'
+                   and (i.baby_id is null or i.baby_id = b.baby_id)
+                   and not exists (
+                         select 1 from nc_care_hidden h
+                          where h.baby_id = b.baby_id and h.item_id = i.item_id
+                       )
+                   and coalesce(l.completed, '0') = '0') as unfinished_care
+          from nc_baby b
+          left join lateral (
+                select feed_time, operator_name
+                  from nc_feeding
+                 where baby_id = b.baby_id and del_flag = '0'
+                 order by feed_time desc
+                 limit 1
+          ) lf on true
+         where b.del_flag = '0'
+         order by b.baby_id desc
+        ]]>
+    </select>
+</mapper>

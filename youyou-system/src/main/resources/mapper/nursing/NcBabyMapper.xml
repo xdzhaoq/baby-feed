@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcBabyMapper">
+
+    <resultMap id="NcBabyResult" type="com.youyou.nursing.domain.NcBaby">
+        <id     property="babyId"         column="baby_id"/>
+        <result property="babyName"       column="baby_name"/>
+        <result property="nickname"       column="nickname"/>
+        <result property="gender"         column="gender"/>
+        <result property="birthDate"      column="birth_date"/>
+        <result property="birthWeightKg"  column="birth_weight_kg"/>
+        <result property="birthHeightCm"  column="birth_height_cm"/>
+        <result property="birthHeadCm"    column="birth_head_cm"/>
+        <result property="momUserId"      column="mom_user_id"/>
+        <result property="momUserName"    column="mom_user_name"/>
+        <result property="mediaDir"       column="media_dir"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="rev"            column="rev"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectBabyVo">
+        select b.baby_id, b.baby_name, b.nickname, b.gender, b.birth_date, b.birth_weight_kg,
+               b.birth_height_cm, b.birth_head_cm, b.mom_user_id, b.mom_user_name, b.media_dir,
+               b.status, b.del_flag, b.rev, b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+          from nc_baby b
+    </sql>
+
+    <select id="selectBabyById" parameterType="Long" resultMap="NcBabyResult">
+        <include refid="selectBabyVo"/>
+        where b.baby_id = #{babyId} and b.del_flag = '0'
+    </select>
+
+    <select id="selectBabyList" parameterType="com.youyou.nursing.domain.NcBaby" resultMap="NcBabyResult">
+        <include refid="selectBabyVo"/>
+        <if test="queryAdmin == null or queryAdmin == false">
+            inner join nc_baby_member m on m.baby_id = b.baby_id
+                and m.user_id = #{queryUserId}
+                and m.status = '0'
+        </if>
+        <where>
+            b.del_flag = '0'
+            <if test="babyName != null and babyName != ''">
+                and b.baby_name like concat('%', #{babyName}, '%')
+            </if>
+            <if test="momUserName != null and momUserName != ''">
+                and b.mom_user_name like concat('%', #{momUserName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and b.status = #{status}
+            </if>
+        </where>
+        order by b.baby_id desc
+    </select>
+
+    <insert id="insertBaby" parameterType="com.youyou.nursing.domain.NcBaby" useGeneratedKeys="true" keyProperty="babyId">
+        insert into nc_baby (
+            baby_name, nickname, gender, birth_date, birth_weight_kg, birth_height_cm, birth_head_cm,
+            mom_user_id, mom_user_name, media_dir, status, del_flag, rev, create_by, create_time, remark
+        ) values (
+            #{babyName}, #{nickname}, #{gender}, #{birthDate}, #{birthWeightKg}, #{birthHeightCm}, #{birthHeadCm},
+            #{momUserId}, #{momUserName}, #{mediaDir}, #{status}, #{delFlag}, #{rev}, #{createBy}, current_timestamp, #{remark}
+        )
+    </insert>
+
+    <update id="updateBaby" parameterType="com.youyou.nursing.domain.NcBaby">
+        update nc_baby
+        <set>
+            <if test="babyName != null and babyName != ''">baby_name = #{babyName},</if>
+            nickname = #{nickname},
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="birthDate != null">birth_date = #{birthDate},</if>
+            birth_weight_kg = #{birthWeightKg},
+            birth_height_cm = #{birthHeightCm},
+            birth_head_cm = #{birthHeadCm},
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            remark = #{remark},
+            rev = rev + 1,
+            update_time = current_timestamp
+        </set>
+        where baby_id = #{babyId} and del_flag = '0'
+    </update>
+
+    <update id="updateMediaDir">
+        update nc_baby set media_dir = #{mediaDir} where baby_id = #{babyId}
+    </update>
+
+    <update id="deleteBabyByIds">
+        update nc_baby set del_flag = '2', update_time = current_timestamp
+         where baby_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectRoleIdByKey" parameterType="String" resultType="Long">
+        select role_id from sys_role where role_key = #{roleKey} and del_flag = '0' limit 1
+    </select>
+
+    <select id="countUserRoleKey" resultType="int">
+        select count(1)
+          from sys_user_role ur
+          inner join sys_role r on r.role_id = ur.role_id and r.del_flag = '0'
+         where ur.user_id = #{userId} and r.role_key = #{roleKey}
+    </select>
+</mapper>

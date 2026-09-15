@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcHealthCheckMapper">
+
+    <resultMap id="HealthResult" type="com.youyou.nursing.domain.NcHealthCheck">
+        <id     property="checkId"      column="check_id"/>
+        <result property="babyId"       column="baby_id"/>
+        <result property="checkDate"    column="check_date"/>
+        <result property="tempAm"       column="temp_am"/>
+        <result property="tempPm"       column="temp_pm"/>
+        <result property="jaundice"     column="jaundice"/>
+        <result property="umbilical"    column="umbilical"/>
+        <result property="spirit"       column="spirit"/>
+        <result property="notes"        column="notes"/>
+        <result property="operatorId"   column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="rev"          column="rev"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateByName" column="update_by_name"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select check_id, baby_id, check_date, temp_am, temp_pm, jaundice, umbilical, spirit, notes,
+               operator_id, operator_name, rev, del_flag, create_by, create_time,
+               update_by, update_by_name, update_time, remark
+          from nc_health_check
+    </sql>
+
+    <select id="selectById" resultMap="HealthResult">
+        <include refid="selectVo"/>
+        where check_id = #{checkId} and del_flag = '0'
+    </select>
+
+    <select id="selectByBabyDate" resultMap="HealthResult">
+        <include refid="selectVo"/>
+        where baby_id = #{babyId} and check_date = #{checkDate} and del_flag = '0'
+    </select>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcHealthCheck" resultMap="HealthResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            and baby_id = #{babyId}
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and check_date &gt;= to_date(#{params.beginTime},'yyyy-MM-dd')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and check_date &lt;= to_date(#{params.endTime},'yyyy-MM-dd')
+            </if>
+        </where>
+        order by check_date desc, check_id desc
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcHealthCheck" useGeneratedKeys="true" keyProperty="checkId">
+        insert into nc_health_check (
+            baby_id, check_date, temp_am, temp_pm, jaundice, umbilical, spirit, notes,
+            operator_id, operator_name, rev, del_flag, create_by, create_time, remark
+        ) values (
+            #{babyId}, #{checkDate}, #{tempAm}, #{tempPm}, #{jaundice}, #{umbilical}, #{spirit}, #{notes},
+            #{operatorId}, #{operatorName}, #{rev}, #{delFlag}, #{createBy}, current_timestamp, #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.youyou.nursing.domain.NcHealthCheck">
+        update nc_health_check
+           set temp_am = #{tempAm},
+               temp_pm = #{tempPm},
+               jaundice = #{jaundice},
+               umbilical = #{umbilical},
+               spirit = #{spirit},
+               notes = #{notes},
+               update_by = #{updateBy},
+               update_by_name = #{updateByName},
+               rev = rev + 1,
+               update_time = current_timestamp
+         where check_id = #{checkId} and del_flag = '0' and rev = #{rev}
+    </update>
+</mapper>

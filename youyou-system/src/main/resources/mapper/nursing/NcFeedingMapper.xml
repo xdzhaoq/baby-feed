@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcFeedingMapper">
+
+    <resultMap id="NcFeedingResult" type="com.youyou.nursing.domain.NcFeeding">
+        <id     property="feedingId"     column="feeding_id"/>
+        <result property="babyId"        column="baby_id"/>
+        <result property="feedTime"      column="feed_time"/>
+        <result property="feedMethod"    column="feed_method"/>
+        <result property="amountMl"      column="amount_ml"/>
+        <result property="durationMin"   column="duration_min"/>
+        <result property="leftDuration"  column="left_duration"/>
+        <result property="rightDuration" column="right_duration"/>
+        <result property="burped"        column="burped"/>
+        <result property="burpDuration"  column="burp_duration"/>
+        <result property="burpEffect"    column="burp_effect"/>
+        <result property="afterBehavior" column="after_behavior"/>
+        <result property="notes"         column="notes"/>
+        <result property="operatorId"    column="operator_id"/>
+        <result property="operatorName"  column="operator_name"/>
+        <result property="rev"           column="rev"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateByName"  column="update_by_name"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select feeding_id, baby_id, feed_time, feed_method, amount_ml, duration_min, left_duration, right_duration,
+               burped, burp_duration, burp_effect, after_behavior, notes, operator_id, operator_name,
+               rev, del_flag, create_by, create_time, update_by, update_by_name, update_time, remark
+          from nc_feeding
+    </sql>
+
+    <select id="selectById" resultMap="NcFeedingResult">
+        <include refid="selectVo"/>
+        where feeding_id = #{feedingId} and del_flag = '0'
+    </select>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcFeeding" resultMap="NcFeedingResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            and baby_id = #{babyId}
+            <if test="feedMethod != null and feedMethod != ''">and feed_method = #{feedMethod}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and feed_time::date &gt;= to_date(#{params.beginTime},'yyyy-MM-dd')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and feed_time::date &lt;= to_date(#{params.endTime},'yyyy-MM-dd')
+            </if>
+        </where>
+        order by feed_time desc, feeding_id desc
+    </select>
+
+    <select id="selectDailyChart" resultType="com.youyou.nursing.domain.NcChartPoint">
+        select to_char(feed_time, 'YYYY-MM-DD') as label,
+               count(*)::int as count,
+               coalesce(sum(amount_ml), 0) as amount
+          from nc_feeding
+         where baby_id = #{babyId}
+           and del_flag = '0'
+           and feed_time::date &gt;= current_date - (#{days}::int - 1)
+         group by to_char(feed_time, 'YYYY-MM-DD')
+         order by label
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcFeeding" useGeneratedKeys="true" keyProperty="feedingId">
+        insert into nc_feeding (
+            baby_id, feed_time, feed_method, amount_ml, duration_min, left_duration, right_duration,
+            burped, burp_duration, burp_effect, after_behavior, notes, operator_id, operator_name,
+            rev, del_flag, create_by, create_time, remark
+        ) values (
+            #{babyId}, #{feedTime}, #{feedMethod}, #{amountMl}, #{durationMin}, #{leftDuration}, #{rightDuration},
+            #{burped}, #{burpDuration}, #{burpEffect}, #{afterBehavior}, #{notes}, #{operatorId}, #{operatorName},
+            #{rev}, #{delFlag}, #{createBy}, current_timestamp, #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.youyou.nursing.domain.NcFeeding">
+        update nc_feeding
+           set feed_time = #{feedTime},
+               feed_method = #{feedMethod},
+               amount_ml = #{amountMl},
+               duration_min = #{durationMin},
+               left_duration = #{leftDuration},
+               right_duration = #{rightDuration},
+               burped = #{burped},
+               burp_duration = #{burpDuration},
+               burp_effect = #{burpEffect},
+               after_behavior = #{afterBehavior},
+               notes = #{notes},
+               update_by = #{updateBy},
+               update_by_name = #{updateByName},
+               rev = rev + 1,
+               update_time = current_timestamp
+         where feeding_id = #{feedingId} and del_flag = '0' and rev = #{rev}
+    </update>
+
+    <update id="deleteByIds">
+        update nc_feeding set del_flag = '2', update_time = current_timestamp
+         where feeding_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+</mapper>

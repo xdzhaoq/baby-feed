@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcMessageMapper">
+
+    <resultMap id="MessageResult" type="com.youyou.nursing.domain.NcMessage">
+        <id     property="messageId"  column="message_id"/>
+        <result property="babyId"     column="baby_id"/>
+        <result property="content"    column="content"/>
+        <result property="authorId"   column="author_id"/>
+        <result property="authorName" column="author_name"/>
+        <result property="delFlag"    column="del_flag"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <resultMap id="MentionResult" type="com.youyou.nursing.domain.NcMessageMention">
+        <id     property="mentionId"       column="mention_id"/>
+        <result property="messageId"       column="message_id"/>
+        <result property="babyId"          column="baby_id"/>
+        <result property="mentionedUserId" column="mentioned_user_id"/>
+        <result property="mentionedName"   column="mentioned_name"/>
+        <result property="readFlag"        column="read_flag"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="content"         column="content"/>
+        <result property="authorName"      column="author_name"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcMessage" resultMap="MessageResult">
+        select message_id, baby_id, content, author_id, author_name, del_flag, create_time
+          from nc_message
+         where del_flag = '0' and baby_id = #{babyId}
+         order by create_time desc, message_id desc
+    </select>
+
+    <select id="selectById" resultMap="MessageResult">
+        select message_id, baby_id, content, author_id, author_name, del_flag, create_time
+          from nc_message
+         where message_id = #{messageId} and del_flag = '0'
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcMessage" useGeneratedKeys="true" keyProperty="messageId">
+        insert into nc_message (baby_id, content, author_id, author_name, del_flag, create_time)
+        values (#{babyId}, #{content}, #{authorId}, #{authorName}, #{delFlag}, current_timestamp)
+    </insert>
+
+    <insert id="insertMention" parameterType="com.youyou.nursing.domain.NcMessageMention" useGeneratedKeys="true" keyProperty="mentionId">
+        insert into nc_message_mention (message_id, baby_id, mentioned_user_id, mentioned_name, read_flag, create_time)
+        values (#{messageId}, #{babyId}, #{mentionedUserId}, #{mentionedName}, #{readFlag}, current_timestamp)
+    </insert>
+
+    <select id="selectMentionsByMessageIds" resultMap="MentionResult">
+        select mention_id, message_id, baby_id, mentioned_user_id, mentioned_name, read_flag, create_time
+          from nc_message_mention
+         where message_id in
+        <foreach collection="messageIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <select id="selectUnread" resultMap="MentionResult">
+        select mm.mention_id, mm.message_id, mm.baby_id, mm.mentioned_user_id, mm.mentioned_name,
+               mm.read_flag, mm.create_time, m.content, m.author_name
+          from nc_message_mention mm
+          inner join nc_message m on m.message_id = mm.message_id and m.del_flag = '0'
+         where mm.baby_id = #{babyId}
+           and mm.mentioned_user_id = #{userId}
+           and mm.read_flag = '0'
+         order by mm.create_time desc
+    </select>
+
+    <update id="markRead">
+        update nc_message_mention
+           set read_flag = '1'
+         where mention_id = #{mentionId} and mentioned_user_id = #{userId} and read_flag = '0'
+    </update>
+
+    <update id="markAllRead">
+        update nc_message_mention
+           set read_flag = '1'
+         where baby_id = #{babyId} and mentioned_user_id = #{userId} and read_flag = '0'
+    </update>
+</mapper>

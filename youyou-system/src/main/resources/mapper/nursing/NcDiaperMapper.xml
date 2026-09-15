@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcDiaperMapper">
+
+    <resultMap id="NcDiaperResult" type="com.youyou.nursing.domain.NcDiaper">
+        <id     property="diaperId"     column="diaper_id"/>
+        <result property="babyId"       column="baby_id"/>
+        <result property="recordTime"   column="record_time"/>
+        <result property="diaperType"   column="diaper_type"/>
+        <result property="stoolTexture" column="stool_texture"/>
+        <result property="notes"        column="notes"/>
+        <result property="operatorId"   column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="rev"          column="rev"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateByName" column="update_by_name"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select diaper_id, baby_id, record_time, diaper_type, stool_texture, notes,
+               operator_id, operator_name, rev, del_flag, create_by, create_time,
+               update_by, update_by_name, update_time, remark
+          from nc_diaper
+    </sql>
+
+    <select id="selectById" resultMap="NcDiaperResult">
+        <include refid="selectVo"/>
+        where diaper_id = #{diaperId} and del_flag = '0'
+    </select>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcDiaper" resultMap="NcDiaperResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            and baby_id = #{babyId}
+            <if test="diaperType != null and diaperType != ''">and diaper_type = #{diaperType}</if>
+            <if test="stoolTexture != null and stoolTexture != ''">and stool_texture = #{stoolTexture}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and record_time::date &gt;= to_date(#{params.beginTime},'yyyy-MM-dd')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and record_time::date &lt;= to_date(#{params.endTime},'yyyy-MM-dd')
+            </if>
+        </where>
+        order by record_time desc, diaper_id desc
+    </select>
+
+    <select id="selectDailyChart" resultType="com.youyou.nursing.domain.NcChartPoint">
+        select to_char(record_time, 'YYYY-MM-DD') as label,
+               sum(case when diaper_type in ('pee', 'both') then 1 else 0 end)::int as count,
+               sum(case when diaper_type in ('poop', 'both') then 1 else 0 end)::int as extra
+          from nc_diaper
+         where baby_id = #{babyId}
+           and del_flag = '0'
+           and record_time::date &gt;= current_date - (#{days}::int - 1)
+         group by to_char(record_time, 'YYYY-MM-DD')
+         order by label
+    </select>
+
+    <select id="selectTodayStat" resultType="com.youyou.nursing.domain.NcChartPoint">
+        select count(*)::int as count,
+               sum(case when stool_texture in ('watery', 'bloody', 'mucus', 'other') then 1 else 0 end)::int as extra
+          from nc_diaper
+         where baby_id = #{babyId}
+           and del_flag = '0'
+           and record_time::date = current_date
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcDiaper" useGeneratedKeys="true" keyProperty="diaperId">
+        insert into nc_diaper (
+            baby_id, record_time, diaper_type, stool_texture, notes,
+            operator_id, operator_name, rev, del_flag, create_by, create_time, remark
+        ) values (
+            #{babyId}, #{recordTime}, #{diaperType}, #{stoolTexture}, #{notes},
+            #{operatorId}, #{operatorName}, #{rev}, #{delFlag}, #{createBy}, current_timestamp, #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.youyou.nursing.domain.NcDiaper">
+        update nc_diaper
+           set record_time = #{recordTime},
+               diaper_type = #{diaperType},
+               stool_texture = #{stoolTexture},
+               notes = #{notes},
+               update_by = #{updateBy},
+               update_by_name = #{updateByName},
+               rev = rev + 1,
+               update_time = current_timestamp
+         where diaper_id = #{diaperId} and del_flag = '0' and rev = #{rev}
+    </update>
+
+    <update id="deleteByIds">
+        update nc_diaper set del_flag = '2', update_time = current_timestamp
+         where diaper_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+</mapper>

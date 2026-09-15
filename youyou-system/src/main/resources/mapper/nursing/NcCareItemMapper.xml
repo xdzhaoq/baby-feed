@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcCareItemMapper">
+
+    <resultMap id="CareTodayResult" type="com.youyou.nursing.domain.NcCareItem">
+        <id     property="itemId"       column="item_id"/>
+        <result property="babyId"       column="baby_id"/>
+        <result property="itemName"     column="item_name"/>
+        <result property="isBuiltin"    column="is_builtin"/>
+        <result property="sortNum"      column="sort_num"/>
+        <result property="status"       column="status"/>
+        <result property="logId"        column="log_id"/>
+        <result property="completed"    column="completed"/>
+        <result property="completeTime" column="complete_time"/>
+        <result property="operatorId"   column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+    </resultMap>
+
+    <select id="selectTodayList" resultMap="CareTodayResult">
+        select i.item_id, i.baby_id, i.item_name, i.is_builtin, i.sort_num, i.status,
+               l.log_id, coalesce(l.completed, '0') as completed, l.complete_time, l.operator_id, l.operator_name
+          from nc_care_item i
+          left join nc_care_log l
+            on l.item_id = i.item_id and l.baby_id = #{babyId} and l.care_date = #{careDate}
+         where i.del_flag = '0' and i.status = '0'
+           and (i.baby_id is null or i.baby_id = #{babyId})
+           and not exists (
+                 select 1 from nc_care_hidden h
+                  where h.baby_id = #{babyId} and h.item_id = i.item_id
+               )
+         order by i.is_builtin desc, i.sort_num, i.item_id
+    </select>
+
+    <select id="selectById" resultMap="CareTodayResult">
+        select item_id, baby_id, item_name, is_builtin, sort_num, status
+          from nc_care_item
+         where item_id = #{itemId} and del_flag = '0'
+    </select>
+
+    <insert id="insertItem" parameterType="com.youyou.nursing.domain.NcCareItem" useGeneratedKeys="true" keyProperty="itemId">
+        insert into nc_care_item (baby_id, item_name, is_builtin, sort_num, status, del_flag, create_by, create_time, remark)
+        values (#{babyId}, #{itemName}, #{isBuiltin}, #{sortNum}, #{status}, #{delFlag}, #{createBy}, current_timestamp, #{remark})
+    </insert>
+
+    <update id="deleteCustom">
+        update nc_care_item
+           set del_flag = '2', update_time = current_timestamp
+         where item_id = #{itemId} and baby_id = #{babyId} and is_builtin = '0' and del_flag = '0'
+    </update>
+
+    <insert id="hideItem">
+        insert into nc_care_hidden (baby_id, item_id, create_time)
+        values (#{babyId}, #{itemId}, current_timestamp)
+        on conflict (baby_id, item_id) do nothing
+    </insert>
+
+    <insert id="upsertLog" parameterType="com.youyou.nursing.domain.NcCareLog">
+        insert into nc_care_log (baby_id, item_id, care_date, completed, complete_time, operator_id, operator_name, create_time, update_time)
+        values (
+            #{babyId}, #{itemId}, #{careDate}, #{completed},
+            case when #{completed} = '1' then current_timestamp else null end,
+            #{operatorId}, #{operatorName}, current_timestamp, current_timestamp
+        )
+        on conflict (baby_id, item_id, care_date) do update
+           set completed = excluded.completed,
+               complete_time = excluded.complete_time,
+               operator_id = excluded.operator_id,
+               operator_name = excluded.operator_name,
+               update_time = current_timestamp
+    </insert>
+</mapper>

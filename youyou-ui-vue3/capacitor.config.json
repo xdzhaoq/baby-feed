@@ -1,0 +1,12 @@
+{
+  "appId": "com.nursing.workbench",
+  "appName": "护理工作台",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

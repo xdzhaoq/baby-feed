@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcHandoverMapper">
+
+    <resultMap id="HandoverResult" type="com.youyou.nursing.domain.NcHandover">
+        <id     property="handoverId"   column="handover_id"/>
+        <result property="babyId"       column="baby_id"/>
+        <result property="fromUserId"   column="from_user_id"/>
+        <result property="fromUserName" column="from_user_name"/>
+        <result property="toUserId"     column="to_user_id"/>
+        <result property="toUserName"   column="to_user_name"/>
+        <result property="handoverTime" column="handover_time"/>
+        <result property="notes"        column="notes"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcHandover" resultMap="HandoverResult">
+        select handover_id, baby_id, from_user_id, from_user_name, to_user_id, to_user_name,
+               handover_time, notes, create_by, create_time
+          from nc_handover
+        <where>
+            baby_id = #{babyId}
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and handover_time &gt;= to_timestamp(#{params.beginTime},'yyyy-MM-dd hh24:mi:ss')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and handover_time &lt;= to_timestamp(#{params.endTime},'yyyy-MM-dd hh24:mi:ss')
+            </if>
+        </where>
+        order by handover_time desc, handover_id desc
+    </select>
+
+    <select id="selectLatest" resultMap="HandoverResult">
+        select handover_id, baby_id, from_user_id, from_user_name, to_user_id, to_user_name,
+               handover_time, notes, create_by, create_time
+          from nc_handover
+         where baby_id = #{babyId}
+         order by handover_time desc, handover_id desc
+         limit 1
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcHandover" useGeneratedKeys="true" keyProperty="handoverId">
+        insert into nc_handover (
+            baby_id, from_user_id, from_user_name, to_user_id, to_user_name,
+            handover_time, notes, create_by, create_time
+        ) values (
+            #{babyId}, #{fromUserId}, #{fromUserName}, #{toUserId}, #{toUserName},
+            #{handoverTime}, #{notes}, #{createBy}, current_timestamp
+        )
+    </insert>
+</mapper>

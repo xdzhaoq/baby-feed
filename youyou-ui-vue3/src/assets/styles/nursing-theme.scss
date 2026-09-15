@@ -1,0 +1,316 @@
+:root{
+  --bg:#FAF5EF;
+  --bg-soft:#F4ECE2;
+  --card:#FFFFFF;
+  --card-2:#FFF9F3;
+  --ink:#463A33;
+  --ink-2:#6E5F55;
+  --muted:#9A8A7D;
+  --line:#EFE3D6;
+  --line-2:#F6ECE1;
+  --pri:#DE8F74;
+  --pri-deep:#C96F52;
+  --pri-soft:#FBE4D9;
+  --ok:#6E9E7E;
+  --ok-soft:#E2EFE5;
+  --ok-ink:#3F6B50;
+  --warn:#C08A2D;
+  --warn-soft:#F8EBCF;
+  --warn-ink:#8A6217;
+  --danger:#C4574F;
+  --danger-soft:#F8E0DC;
+  --danger-ink:#9C3F38;
+  --info:#5E87A8;
+  --info-soft:#E4EEF5;
+  --shadow:0 6px 18px rgba(176,142,110,.10);
+  --shadow-lg:0 12px 34px rgba(150,110,80,.18);
+  --radius:16px;
+  --el-color-primary:#DE8F74;
+  --el-color-primary-light-3:#E8A992;
+  --el-color-primary-light-5:#F0C4B3;
+  --el-color-primary-light-7:#F7DFD6;
+  --el-color-primary-light-8:#FBE4D9;
+  --el-color-primary-light-9:#FDF3EE;
+  --el-color-primary-dark-2:#C96F52;
+  --el-color-success:#6E9E7E;
+  --el-color-warning:#C08A2D;
+  --el-color-danger:#C4574F;
+}
+
+html, body, #app {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+
+.app-wrapper,
+.app-main,
+.app-container {
+  background: var(--bg) !important;
+}
+
+#app .sidebar-container {
+  background: var(--bg-soft) !important;
+  box-shadow: 2px 0 16px rgba(176, 142, 110, 0.12) !important;
+}
+
+#app .sidebar-container .el-menu,
+#app .sidebar-container .el-menu-item,
+#app .sidebar-container .el-sub-menu__title {
+  background: var(--bg-soft) !important;
+  color: var(--ink) !important;
+  border-radius: 10px;
+}
+
+#app .sidebar-container .el-menu-item:hover,
+#app .sidebar-container .el-sub-menu__title:hover {
+  background: var(--pri-soft) !important;
+  color: var(--pri-deep) !important;
+}
+
+#app .sidebar-container .el-menu-item.is-active {
+  background: var(--pri-soft) !important;
+  color: var(--pri-deep) !important;
+  font-weight: 600;
+}
+
+#app .sidebar-container .theme-dark .nest-menu .el-sub-menu > .el-sub-menu__title,
+#app .sidebar-container .theme-dark .el-sub-menu .el-menu-item {
+  background: #efe4d6 !important;
+}
+
+#app .sidebar-logo-container {
+  background: var(--bg-soft) !important;
+}
+
+#app .sidebar-logo-container .sidebar-title {
+  color: var(--pri-deep) !important;
+}
+
+#app .navbar {
+  background: rgba(250, 245, 239, 0.92) !important;
+  border-bottom: 1px solid var(--line);
+}
+
+.tags-view-container {
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--line-2) !important;
+}
+
+.tags-view-item {
+  border-radius: 10px !important;
+}
+
+.tags-view-item.active {
+  background-color: var(--pri) !important;
+  border-color: var(--pri) !important;
+}
+
+.el-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--line-2) !important;
+  box-shadow: var(--shadow);
+  background: var(--card);
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--pri);
+  --el-button-border-color: var(--pri);
+  --el-button-hover-bg-color: var(--pri-deep);
+  --el-button-hover-border-color: var(--pri-deep);
+}
+
+.el-button--primary.is-plain {
+  --el-button-bg-color: var(--pri-soft);
+  --el-button-text-color: var(--pri-deep);
+  --el-button-border-color: var(--pri-soft);
+  --el-button-hover-bg-color: var(--pri);
+  --el-button-hover-text-color: #fff;
+}
+
+.el-pagination.is-background .el-pager li.is-active {
+  background-color: var(--pri);
+}
+
+.el-overlay {
+  background: rgba(70, 58, 51, 0.28) !important;
+}
+
+.el-dialog,
+.el-message-box,
+.nursing-dialog {
+  border-radius: 18px !important;
+  background: #fff9f3 !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.el-dialog__header,
+.el-message-box__header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-2);
+  margin-right: 0 !important;
+}
+
+.el-dialog__title,
+.el-message-box__title {
+  color: var(--ink) !important;
+  font-weight: 600;
+}
+
+.el-dialog__headerbtn .el-dialog__close,
+.el-message-box__headerbtn .el-message-box__close {
+  color: var(--muted);
+}
+
+.el-dialog__body,
+.el-message-box__content {
+  color: var(--ink-2);
+}
+
+.el-dialog__footer,
+.el-message-box__btns {
+  border-top: 1px solid var(--line-2);
+  padding-top: 14px;
+}
+
+.el-message-box__message {
+  color: var(--ink);
+}
+
+.el-form-item__label {
+  color: var(--ink-2) !important;
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  border-radius: 12px !important;
+  background-color: #fbf8f5 !important;
+}
+
+.login {
+  background: linear-gradient(180deg, #faf5ef 0%, #f4ece2 100%) !important;
+  background-image: none !important;
+}
+
+.login .login-form {
+  border-radius: 18px !important;
+  box-shadow: var(--shadow-lg);
+}
+
+.login .title {
+  color: var(--pri-deep) !important;
+}
+
+.who {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.who-ava {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--pri-soft);
+  color: var(--pri-deep);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.who-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  display: inline-block;
+}
+
+.mobile-hub .hub-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mobile-hub .hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 14px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.mobile-hub .hub-card span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 959px) {
+  /* 日期时间面板过高时「确定」会被顶出屏幕，钉在底部并限制高度 */
+  .el-picker__popper.el-popper,
+  .nursing-datetime-popper {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .el-picker-panel.el-date-picker {
+    width: 100% !important;
+    max-height: min(72vh, 560px);
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .el-picker-panel__body-wrapper,
+  .el-picker-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .el-picker-panel__footer {
+    flex: 0 0 auto;
+    display: flex !important;
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background: #fff;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 12px rgba(70, 58, 51, 0.08);
+  }
+
+  .app-container {
+    padding: 12px !important;
+  }
+
+  .login {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 12vh;
+  }
+
+  .login .login-form {
+    width: 100% !important;
+    max-width: 400px;
+  }
+
+  .el-dialog {
+    width: 92vw !important;
+  }
+
+  .el-form--inline .el-form-item {
+    margin-right: 8px;
+  }
+}

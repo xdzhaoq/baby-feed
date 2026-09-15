@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcCryMapper">
+
+    <resultMap id="NcCryResult" type="com.youyou.nursing.domain.NcCry">
+        <id     property="cryId"         column="cry_id"/>
+        <result property="babyId"        column="baby_id"/>
+        <result property="startTime"     column="start_time"/>
+        <result property="endTime"       column="end_time"/>
+        <result property="intensity"     column="intensity"/>
+        <result property="possibleCause" column="possible_cause"/>
+        <result property="sootheMethods" column="soothe_methods"/>
+        <result property="sootheEffect"  column="soothe_effect"/>
+        <result property="notes"         column="notes"/>
+        <result property="operatorId"    column="operator_id"/>
+        <result property="operatorName"  column="operator_name"/>
+        <result property="rev"           column="rev"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateByName"  column="update_by_name"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select cry_id, baby_id, start_time, end_time, intensity, possible_cause, soothe_methods, soothe_effect, notes,
+               operator_id, operator_name, rev, del_flag, create_by, create_time,
+               update_by, update_by_name, update_time, remark
+          from nc_cry
+    </sql>
+
+    <select id="selectById" resultMap="NcCryResult">
+        <include refid="selectVo"/>
+        where cry_id = #{cryId} and del_flag = '0'
+    </select>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcCry" resultMap="NcCryResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            and baby_id = #{babyId}
+            <if test="intensity != null and intensity != ''">and intensity = #{intensity}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and start_time::date &gt;= to_date(#{params.beginTime},'yyyy-MM-dd')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and start_time::date &lt;= to_date(#{params.endTime},'yyyy-MM-dd')
+            </if>
+        </where>
+        order by start_time desc, cry_id desc
+    </select>
+
+    <select id="selectHourChart" resultType="com.youyou.nursing.domain.NcChartPoint">
+        select extract(hour from start_time)::int::varchar as label,
+               count(*)::int as count
+          from nc_cry
+         where baby_id = #{babyId}
+           and del_flag = '0'
+           and start_time::date &gt;= current_date - (#{days}::int - 1)
+         group by extract(hour from start_time)::int
+         order by extract(hour from start_time)::int
+    </select>
+
+    <select id="selectSootheChart" resultType="com.youyou.nursing.domain.NcChartPoint">
+        select trim(method) as label,
+               count(*)::int as count,
+               sum(case when c.soothe_effect = 'effective' then 1 else 0 end)::int as extra
+          from nc_cry c
+          cross join unnest(string_to_array(c.soothe_methods, ',')) as method
+         where c.baby_id = #{babyId}
+           and c.del_flag = '0'
+           and c.start_time::date &gt;= current_date - (#{days}::int - 1)
+           and c.soothe_methods is not null
+           and c.soothe_methods &lt;&gt; ''
+           and trim(method) &lt;&gt; ''
+         group by trim(method)
+         order by extra desc, count desc
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcCry" useGeneratedKeys="true" keyProperty="cryId">
+        insert into nc_cry (
+            baby_id, start_time, end_time, intensity, possible_cause, soothe_methods, soothe_effect, notes,
+            operator_id, operator_name, rev, del_flag, create_by, create_time, remark
+        ) values (
+            #{babyId}, #{startTime}, #{endTime}, #{intensity}, #{possibleCause}, #{sootheMethods}, #{sootheEffect}, #{notes},
+            #{operatorId}, #{operatorName}, #{rev}, #{delFlag}, #{createBy}, current_timestamp, #{remark}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.youyou.nursing.domain.NcCry">
+        update nc_cry
+           set start_time = #{startTime},
+               end_time = #{endTime},
+               intensity = #{intensity},
+               possible_cause = #{possibleCause},
+               soothe_methods = #{sootheMethods},
+               soothe_effect = #{sootheEffect},
+               notes = #{notes},
+               update_by = #{updateBy},
+               update_by_name = #{updateByName},
+               rev = rev + 1,
+               update_time = current_timestamp
+         where cry_id = #{cryId} and del_flag = '0' and rev = #{rev}
+    </update>
+
+    <update id="deleteByIds">
+        update nc_cry set del_flag = '2', update_time = current_timestamp
+         where cry_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+</mapper>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcOperLogMapper">
+
+    <resultMap id="OperLogResult" type="com.youyou.nursing.domain.NcOperLog">
+        <id     property="logId"        column="log_id"/>
+        <result property="babyId"       column="baby_id"/>
+        <result property="moduleCode"   column="module_code"/>
+        <result property="actionCode"   column="action_code"/>
+        <result property="summary"      column="summary"/>
+        <result property="operatorId"   column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="com.youyou.nursing.domain.NcOperLog" resultMap="OperLogResult">
+        select log_id, baby_id, module_code, action_code, summary, operator_id, operator_name, create_time
+          from nc_oper_log
+        <where>
+            baby_id = #{babyId}
+            <if test="moduleCode != null and moduleCode != ''">and module_code = #{moduleCode}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and create_time &gt;= to_timestamp(#{params.beginTime},'yyyy-MM-dd hh24:mi:ss')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and create_time &lt;= to_timestamp(#{params.endTime},'yyyy-MM-dd hh24:mi:ss')
+            </if>
+        </where>
+        order by create_time desc, log_id desc
+    </select>
+
+    <insert id="insert" parameterType="com.youyou.nursing.domain.NcOperLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into nc_oper_log (baby_id, module_code, action_code, summary, operator_id, operator_name, create_time)
+        values (#{babyId}, #{moduleCode}, #{actionCode}, #{summary}, #{operatorId}, #{operatorName}, current_timestamp)
+    </insert>
+</mapper>

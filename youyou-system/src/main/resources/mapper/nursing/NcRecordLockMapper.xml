@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.youyou.nursing.mapper.NcRecordLockMapper">
+
+    <resultMap id="LockResult" type="com.youyou.nursing.domain.NcRecordLock">
+        <id     property="lockId"         column="lock_id"/>
+        <result property="babyId"         column="baby_id"/>
+        <result property="moduleCode"     column="module_code"/>
+        <result property="recordId"       column="record_id"/>
+        <result property="lockerUserId"   column="locker_user_id"/>
+        <result property="lockerName"     column="locker_name"/>
+        <result property="expireTime"     column="expire_time"/>
+        <result property="heartbeatTime"  column="heartbeat_time"/>
+    </resultMap>
+
+    <select id="selectLock" resultMap="LockResult">
+        select lock_id, baby_id, module_code, record_id, locker_user_id, locker_name, expire_time, heartbeat_time
+          from nc_record_lock
+         where module_code = #{moduleCode} and record_id = #{recordId}
+    </select>
+
+    <insert id="insertLock" useGeneratedKeys="true" keyProperty="lockId">
+        insert into nc_record_lock (baby_id, module_code, record_id, locker_user_id, locker_name, expire_time, heartbeat_time)
+        values (#{babyId}, #{moduleCode}, #{recordId}, #{lockerUserId}, #{lockerName}, #{expireTime}, current_timestamp)
+    </insert>
+
+    <update id="renewLock">
+        update nc_record_lock
+           set expire_time = #{expireTime},
+               heartbeat_time = current_timestamp,
+               locker_user_id = #{lockerUserId},
+               locker_name = #{lockerName}
+         where module_code = #{moduleCode} and record_id = #{recordId}
+    </update>
+
+    <delete id="deleteLock">
+        delete from nc_record_lock
+         where module_code = #{moduleCode} and record_id = #{recordId}
+           and locker_user_id = #{userId}
+    </delete>
+
+    <delete id="deleteExpired">
+        delete from nc_record_lock where expire_time &lt; current_timestamp
+    </delete>
+</mapper>
